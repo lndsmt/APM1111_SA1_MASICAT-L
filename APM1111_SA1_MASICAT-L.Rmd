@@ -1,0 +1,140 @@
+---
+title: "SUMMATIVE ASSESSMENT 1"
+author: "Lindsy Rossel C. Masicat"
+date: "2024-10-11"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+```
+<div style="text-align: justify;">
+## A study was undertaken to compare the mean time spent on cell phones by male and female college students per week. Fifty male and 50 female students were selected from Midwestern University and the number of hours per week spent talking on their cell phones determined. The results in hours are shown in Table 10.6. It is desired to test $H_0 : \mu_1 = \mu_2$ versus $H_1 : \mu_1 \neq \mu_2$ based on these samples.
+
+```{r table, echo=FALSE}
+# Data for males and females
+males <- c(12,7,7,10,8,10,11,9,9,13,4,9,12,11,9,9,7,12,10,13,11,10,6,12,11,9,10,12,8,9,13,10,9,7,10,7,10,8,11,10,11,7,15,8,9,9,11,13,10,13)
+
+females <- c(11,10,11,10,11,12,12,10,9,9,9,10,8,7,12,9,7,8,9,8,7,7,9,9,12,10,9,13,9,9,10,9,6,12,8,11,8,8,11,12,9,10,11,14,12,7,11,10,9,11)
+
+table <- data.frame(Males = males, Females = females)
+
+kable(table)
+```
+
+## Questions:
+### 1. Formulate and present the rationale for a hypothesis test that the researcher could use to compare the mean time spent on cell phones by male and female college students per week.
+
+We are to find out if there is a statistically significant difference in the average time spent on cell phones between males and females.
+<br>
+The hypotheses for the two-sample t-test are:
+<br>
+$H_0 : \mu_1 = \mu_2$
+<br>
+$H_1 : \mu_1 \neq \mu_2$
+
+where $𝜇_1$ is the mean time spent on cell phones by male students and $𝜇_2$ is the mean for female students.
+
+```{r ttest,echo=FALSE}
+tTest <- t.test(males, females, var.equal = FALSE)
+
+summaryStats <- data.frame(
+  Group = c("Males", "Females"),
+  N = c(length(males), length(females)),
+  Mean = c(mean(males), mean(females)),
+  Stdev = round(c(sd(males), sd(females)),2),
+  SE_Mean = round(c(sd(males)/sqrt(length(males)), sd(females)/sqrt(length(females))),2)
+)
+
+kable(summaryStats, col.names = c("Group", "N", "Mean", "Stdev", "SE Mean"))
+```
+### 2. Analyze the data to provide the hypothesis testing conclusion. What is the p-value for your test? What is your recommendation for the researcher?
+
+```{r pvalue,echo=FALSE}
+pValue <- tTest$p.value
+
+alpha <- 0.05
+if (pValue < alpha) {
+  conclusion <- "We reject the null hypothesis. There is a significant difference in the mean time spent on cell phones between males and females."
+} else {
+  conclusion <- "We fail to reject the null hypothesis. There is no significant difference in the mean time spent on cell phones between males and females."
+}
+```
+<br>
+The p-value is equal to **`r pValue`**. Since, the p-value is greater than the significance level ($\alpha = 0.05$). Then, `r conclusion`. So, the recommendation for the researcher would be to consider increasing the sample size for better outcome or consider other factors between the two genders' personality and behavior that can may explain their differences.
+
+### 3. Provide descriptive statistical summaries of the data for each gender category.
+
+```{r summary,echo=FALSE}
+table_long <- table %>%
+  tidyr::gather(Gender, Hours)
+
+summaryStats <- table_long %>%
+  group_by(Gender) %>%
+  summarize(
+    Mean = mean(Hours),
+    SD = sd(Hours),
+    Min = min(Hours),
+    Max = max(Hours),
+    Median = median(Hours)
+  )
+
+kable(summaryStats, col.names = c("Gender", "Mean", "SD", "Min", "Max", "Median"))
+
+```
+
+### 4. What is the 95% confidence interval for the population mean of each gender category, and what is the 95% confidence interval for the difference between the means of the two populations?
+
+We will compute the 95% confidence intervals for the population means of each gender and the difference between the means.
+
+```{r confidence,echo=FALSE}
+cimales <- t.test(males)$conf.int
+cifemales <- t.test(females)$conf.int
+cidiff <- tTest$conf.int
+
+citable <- data.frame(
+  Group = c("Males", "Females", "Difference in Means"),
+  LowerBound = c(cimales[1], cifemales[1], cidiff[1]),
+  UpperBound = c(cimales[2], cifemales[2], cidiff[2])
+)
+
+kable(citable, col.names = c("Group", "Lower Bound (95%)", "Upper Bound (95%)"),
+      caption = "95% Confidence Intervals for Males, Females, and Difference in Means")
+
+```
+This is important to understand the range within which the true population means lie and the range for the difference in means.
+
+### 5. Do you see a need for larger sample sizes and more testing with the time spent on cell phones? Discuss.
+
+The results of the t-test indicate whether there is a significant difference between the two groups. However, bigger sample numbers could give more reliable results. Larger samples would also reduce the margin of error in the confidence intervals. The two-sample t-test's assumptions, such as observation independence, data normality, and equal variances between groups, should also be validated.
+
+```{r 5, echo=FALSE}
+par(mfrow = c(1, 2))
+qqnorm(males, main = "Q-Q Plot for Males")
+qqline(males, col = "blue")
+qqnorm(females, main = "Q-Q Plot for Females")
+qqline(females, col = "red")
+
+vartest <- var.test(males, females)
+
+fstatistic <- vartest$statistic
+pvalue_vartest <- vartest$p.value
+conf_int_vartest <- vartest$conf.int
+
+vartest_table <- data.frame(
+  Statistic = c("F-Statistic", "P-Value", "Lower Bound (95%)", "Upper Bound (95%)"),
+  Value = c(fstatistic, pvalue_vartest, conf_int_vartest[1], conf_int_vartest[2])
+)
+
+kable(vartest_table, col.names = c("Test Statistic", "Value"),
+      caption = "Variance Test Results for Males and Females")
+```
+
+### 6. Make a report including the testing of the assumptions for two independent samples t-test.
+
+The two-sample t-test must meet several fundamental assumptions in order to be valid. First, the assumption of independence is met since the observations in each group are independent of one another. Second, Q-Q plots were used to assess the normality assumption in both the male and female groups. Visual inspection revealed that the data points for each group closely followed a straight line, indicating that both samples approximated a normal distribution and so supported the normality assumption. Third, the assumption of equal variances between the groups was evaluated with an F-test, which resulted in a p-value of `r round(pvalue_vartest, 4)`. Given that this p-value greater than the frequently used threshold of 0.05, we cannot reject the null hypothesis of equal variances. As a result, it is acceptable to presume that the differences between the male and female groups are not significant. Based on these findings, the assumptions that represent the two-sample t-test appear to be appropriately met.
+<\div>
